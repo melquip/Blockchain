@@ -63,8 +63,6 @@ class Blockchain(object):
         # This can be hard to read, but .hexdigest() converts the
         # hash to a string of hexadecimal characters, which is
         # easier to work with and understand
-        
-
 
         # Return the hashed block string in hexadecimal format
         return hashlib.sha256(block_string).hexdigest()
@@ -90,7 +88,6 @@ class Blockchain(object):
         guess = f"{block_string}{proof}".encode()
         # create a guess hash and hexdigest it
         guess_hash = hashlib.sha256(guess).hexdigest()
-        pass
         # then return True if the guess hash has the valid number of leading zeros otherwise return False
         return guess_hash[:6] == "000000"
 
@@ -106,20 +103,19 @@ node_identifier = str(uuid4()).replace('-', '')
 blockchain = Blockchain()
 
 @app.route('/mine', methods=['POST'])
-def mine(request):
+def mine():
     # Run the proof of work algorithm to get the next proof
     data = request.get_json()
-    if not data.proof or not data.id:
-      return jsonify({ 'message': 'Required fields «proof» and/or «id» are missing!' }), 400
+    if not data['proof'] or not data['id']:
+        return jsonify({ 'message': 'Required fields «proof» and/or «id» are missing!' }), 400
     # Forge the new Block by adding it to the chain with the proof
-    proof = data.proof
+    proof = data['proof']
     previous_hash = blockchain.hash(blockchain.last_block)
-    block = None
-    response = { 'message': 'Invalid proof provided' }
-    if blockchain.valid_proof(previous_hash, proof):
+    if not blockchain.valid_proof(previous_hash, proof):
+        return jsonify({ 'message': 'Invalid proof provided' }), 400
+    else:
       block = blockchain.new_block(proof, previous_hash)
-      response = { "block": block }
-    return jsonify(response), 200
+      return jsonify({ 'message': 'New Block Forged', 'block': block }), 200
 
 
 @app.route('/chain', methods=['GET'])
