@@ -25,7 +25,7 @@ def proof_of_work(block):
         proof += 1        
     # return proof
     end = time()
-    print(f'Found valid proof: {block_string}{proof} in {end - start}s')
+    print(f'Found possible proof: {block_string}{proof} in {end - start}s')
     return proof
 
 def valid_proof(block_string, proof):
@@ -92,6 +92,7 @@ if __name__ == '__main__':
         # print the message from the server.
         if data['message'] == 'New Block Forged':
             coins += 1
+            print(f'Proof was successfully validated!')
             print(f'Coins mined so far: {coins}')
         else:
             print(data['message'], new_proof)
