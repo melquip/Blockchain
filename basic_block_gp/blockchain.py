@@ -63,9 +63,6 @@ class Blockchain(object):
         # This can be hard to read, but .hexdigest() converts the
         # hash to a string of hexadecimal characters, which is
         # easier to work with and understand
-        
-
-
         # Return the hashed block string in hexadecimal format
         return hashlib.sha256(block_string).hexdigest()
 
@@ -106,7 +103,6 @@ class Blockchain(object):
         guess = f"{block_string}{proof}".encode()
         # create a guess hash and hexdigest it
         guess_hash = hashlib.sha256(guess).hexdigest()
-        pass
         # then return True if the guess hash has the valid number of leading zeros otherwise return False
         return guess_hash[:3] == "000"
 

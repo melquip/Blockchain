@@ -63,7 +63,7 @@ class Blockchain(object):
         # This can be hard to read, but .hexdigest() converts the
         # hash to a string of hexadecimal characters, which is
         # easier to work with and understand
-
+        
         # Return the hashed block string in hexadecimal format
         return hashlib.sha256(block_string).hexdigest()
 
@@ -106,16 +106,42 @@ blockchain = Blockchain()
 def mine():
     # Run the proof of work algorithm to get the next proof
     data = request.get_json()
-    if not data['proof'] or not data['id']:
-        return jsonify({ 'message': 'Required fields «proof» and/or «id» are missing!' }), 400
-    # Forge the new Block by adding it to the chain with the proof
-    proof = data['proof']
-    previous_hash = blockchain.hash(blockchain.last_block)
-    if not blockchain.valid_proof(previous_hash, proof):
-        return jsonify({ 'message': 'Invalid proof provided' }), 400
+
+    required = ['proof', 'id']
+
+    # if the values from data are not in required
+    if not all(k in data for k in required):
+        # then send a json message of missing values
+        response = {'message': "Missing Values"}
+        # return a 400 error
+        return jsonify(response), 400
+    
+    # get the submitted proof from data
+    submitted_proof = data.get('proof')
+
+    # determine if proof is valid
+    last_block = blockchain.last_block
+    last_block_string = json.dumps(last_block, sort_keys=True)
+    if blockchain.valid_proof(last_block_string, submitted_proof):
+        # forge the new block
+        previous_hash = blockchain.hash(last_block)
+        block = blockchain.new_block(submitted_proof, previous_hash)
+        # build a response dictionary
+
+        response = {
+            'message': "New Block Forged",
+            'index': block['index'],
+            'transactions': block['transactions'],
+            'proof': block['proof'],
+            'previous_hash': block['previous_hash']
+        }
+        # return the response
+        return jsonify(response), 200
+    # otherwise
     else:
-      block = blockchain.new_block(proof, previous_hash)
-      return jsonify({ 'message': 'New Block Forged', 'block': block }), 200
+        # send a json mesage that the proof was invalid
+        response = { 'message': "Proof was invalid or already submitted"}
+        return jsonify(response), 200
 
 
 @app.route('/chain', methods=['GET'])
@@ -128,7 +154,8 @@ def full_chain():
 
 @app.route('/last_block', methods=['GET'])
 def last_block():
-    return jsonify(blockchain.last_block), 200
+    response = { 'last_block': blockchain.last_block }
+    return jsonify(response), 200
 
 
 # Run the program on port 5000
