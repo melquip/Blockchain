@@ -47,6 +47,29 @@ table {
 	border-spacing: 0;
 }
 
+body {
+    font-family: monospace;
+}
+
 * {
     box-sizing: border-box;
+}
+
+h2 {
+    font-size: 1.5rem;
+    line-height: 3rem;
+    margin-top: 3rem;
+}
+
+.App {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.transaction {
+    border-top: 1px solid #000000;
+}
+.transaction p {
+    font-size: 1.25rem;
+    line-height: 2rem;
 }
