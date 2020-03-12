@@ -3,14 +3,14 @@ import axios from 'axios';
 
 function App() {
     const server = 'http://localhost:5000'
-    const [lastUsername, setLastUsername] = useState('melqui')
-    const [username, setUsername] = useState('melqui')
+    const [lastUsername, setLastUsername] = useState('user')
+    const [username, setUsername] = useState('user')
     const [balance, setBalance] = useState(0)
     const [isMining, setIsMining] = useState(false)
     const [transactions, setTransactions] = useState([])
     const [recipient, setRecipient] = useState('')
     const [amount, setAmount] = useState(0)
-    const [lastBlock, setLastBlock] = useState(null)
+    // const [lastBlock, setLastBlock] = useState(null)
 
 
     useEffect(() => {
@@ -48,6 +48,15 @@ function App() {
         axios.post(`${server}/user/change`, { lastUsername, username }).then(res => {
             console.log('/user/change', res)
             if (res.data.success) {
+                setTransactions(prevState => prevState.map(t => {
+                    if (t.sender === lastUsername) {
+                        t.sender = username
+                    }
+                    if (t.recipient === lastUsername) {
+                        t.recipient = username
+                    }
+                    return t
+                }))
                 setLastUsername(username)
             }
         }).catch(err => console.error(err));
@@ -79,14 +88,6 @@ function App() {
                     ...prevState,
                     ...myTransactions
                 ]);
-                console.log(myTransactions, myTransactions.reduce((total, t) => {
-                    if (t.sender === lastUsername) {
-                        total -= t.amount
-                    } else if (t.recipient === lastUsername) {
-                        total += t.amount
-                    }
-                    return total
-                }, 0))
                 setBalance(prevState => prevState + myTransactions.reduce((total, t) => {
                     if (t.sender === lastUsername) {
                         total -= t.amount
@@ -95,7 +96,6 @@ function App() {
                     }
                     return total
                 }, 0));
-                
             }).catch(err => {
                 console.error(err)
             }).finally(e => {
