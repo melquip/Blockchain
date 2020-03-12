@@ -4,6 +4,7 @@ from time import time
 from uuid import uuid4
 
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 
 class Blockchain(object):
@@ -96,7 +97,7 @@ class Blockchain(object):
 
 # Instantiate our Node
 app = Flask(__name__)
-
+CORS(app)
 # Generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
 
@@ -170,14 +171,34 @@ def change_username():
     username = data['username']
 
     for b in range(0, len(blockchain.chain)):
-        for t in range(0, len(blockchain.chain[b].transactions)):
-            currTransaction = blockchain.chain[b].transactions[t]
+        for t in range(0, len(blockchain.chain[b]['transactions'])):
+            currTransaction = blockchain.chain[b]['transactions'][t]
             if currTransaction.sender == lastUsername:
-                blockchain.chain[b].transactions[t].sender = username
+                blockchain.chain[b]['transactions'][t].sender = username
             if currTransaction.receiver == lastUsername:
-                blockchain.chain[b].transactions[t].receiver = username
+                blockchain.chain[b]['transactions'][t].receiver = username
 
     return jsonify({ 'success': True }), 200
+
+
+@app.route('/getUserBalance', methods=['POST'])
+def get_user_balance():
+    data = request.get_json()
+    if not data['username']:
+        return jsonify({ 'message': 'Missing fields' }), 400
+
+    username = data['username']
+    balance = 0
+
+    for b in range(0, len(blockchain.chain)):
+        for t in range(0, len(blockchain.chain[b]['transactions'])):
+            currTransaction = blockchain.chain[b]['transactions'][t]
+            if currTransaction.sender == username:
+                balance -= currTransaction.amount
+            if currTransaction.receiver == username:
+                balance += currTransaction.amount
+
+    return jsonify({ 'username': username, 'balance': balance }), 200
 
 
 # Run the program on port 5000
