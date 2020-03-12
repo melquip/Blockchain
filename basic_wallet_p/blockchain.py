@@ -189,10 +189,10 @@ def change_username():
     for b in range(0, len(blockchain.chain)):
         for t in range(0, len(blockchain.chain[b]['transactions'])):
             currTransaction = blockchain.chain[b]['transactions'][t]
-            if currTransaction.sender == lastUsername:
-                blockchain.chain[b]['transactions'][t].sender = username
-            if currTransaction.recipient == lastUsername:
-                blockchain.chain[b]['transactions'][t].recipient = username
+            if currTransaction['sender'] == lastUsername:
+                blockchain.chain[b]['transactions'][t]['sender'] = username
+            if currTransaction['recipient'] == lastUsername:
+                blockchain.chain[b]['transactions'][t]['recipient'] = username
 
     return jsonify({ 'success': True }), 200
 
@@ -209,10 +209,10 @@ def get_user_balance():
     for b in range(0, len(blockchain.chain)):
         for t in range(0, len(blockchain.chain[b]['transactions'])):
             currTransaction = blockchain.chain[b]['transactions'][t]
-            if currTransaction.sender == username:
-                balance -= currTransaction.amount
-            if currTransaction.recipient == username:
-                balance += currTransaction.amount
+            if currTransaction['sender'] == username:
+                balance -= currTransaction['amount']
+            if currTransaction['recipient'] == username:
+                balance += currTransaction['amount']
 
     return jsonify({ 'username': username, 'balance': balance }), 200
 
@@ -227,7 +227,7 @@ def get_user_transactions():
     for b in range(0, len(blockchain.chain)):
         for t in range(0, len(blockchain.chain[b]['transactions'])):
             currTransaction = blockchain.chain[b]['transactions'][t]
-            if currTransaction.sender == username or currTransaction.recipient == username:
+            if currTransaction['sender'] == username or currTransaction['recipient'] == username:
                 transactions.append(currTransaction)
 
     return jsonify({ 'transactions': transactions }), 200
