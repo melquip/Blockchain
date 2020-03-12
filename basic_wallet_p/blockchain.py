@@ -232,15 +232,15 @@ def get_user_transactions():
 
     return jsonify({ 'transactions': transactions }), 200
 
-@app.route('/transactions/new', methods=['POST'])
+@app.route('/transaction/new', methods=['POST'])
 def new_transaction():
     data = request.get_json()
     required = ['sender', 'recipient', 'amount']
     if not all(k in data for k in required):
         return jsonify({ 'message': 'Missing values' }), 400
     
-    index = blockchain.new_transaction(data['sender'], data['recipient'], data['amount'])
-    return jsonify({ 'message': f'Transaction will be added to Block {index}' }), 201
+    index = blockchain.new_transaction(data['sender'], data['recipient'], float(data['amount']))
+    return jsonify({ 'message': f'Transaction will be added to Block {index}' }), 200
     
 # Run the program on port 5000
 if __name__ == '__main__':

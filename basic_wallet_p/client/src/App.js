@@ -70,6 +70,7 @@ function App() {
             'amount': amount,
         }).then(res => {
             console.log('/transaction/new', res)
+            // setBalance(prevState => prevState - amount)
             setRecipient('')
             setAmount(0)
         }).catch(err => console.error(err));
