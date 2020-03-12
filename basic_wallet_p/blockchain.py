@@ -69,6 +69,21 @@ class Blockchain(object):
         # Return the hashed block string in hexadecimal format
         return hashlib.sha256(block_string).hexdigest()
 
+    def new_transaction(self, sender, recipient, amount):
+        """
+        Create a method in the `Blockchain` class called `new_transaction` 
+        that adds a new transaction to the list of transactions:
+        :param sender: <str> Address of the Recipient
+        :param recipient: <str> Address of the Recipient
+        :param amount: <int> Amount
+        :return: <int> The index of the `block` that will hold this transaction
+        """
+        self.current_transactions.append({
+            'sender': sender,
+            'recipient': recipient,
+            'amount': amount
+        })
+        return self.last_block['index'] + 1
 
     @property
     def last_block(self):
@@ -159,7 +174,7 @@ def last_block():
     response = { 'last_block': blockchain.last_block }
     return jsonify(response), 200
 
-@app.route('/changeUsername', methods=['POST'])
+@app.route('/user/change', methods=['POST'])
 def change_username():
     data = request.get_json()
     if not data['lastUsername'] or not data['username']:
@@ -181,7 +196,7 @@ def change_username():
     return jsonify({ 'success': True }), 200
 
 
-@app.route('/getUserBalance', methods=['POST'])
+@app.route('/user/balance', methods=['POST'])
 def get_user_balance():
     data = request.get_json()
     if not data['username']:
@@ -200,7 +215,32 @@ def get_user_balance():
 
     return jsonify({ 'username': username, 'balance': balance }), 200
 
+@app.route('/user/transactions', methods=['POST'])
+def get_user_transactions():
+    data = request.get_json()
+    if not data['username']:
+        return jsonify({ 'message': 'Missing fields' }), 400
 
+    username = data['username']
+    transactions = []
+    for b in range(0, len(blockchain.chain)):
+        for t in range(0, len(blockchain.chain[b]['transactions'])):
+            currTransaction = blockchain.chain[b]['transactions'][t]
+            if currTransaction.sender == username or currTransaction.receiver == username:
+                transactions.append(currTransaction)
+
+    return jsonify({ 'transactions': transactions }), 200
+
+@app.route('/transactions/new', methods=['POST'])
+def new_transaction():
+    data = request.get_json()
+    required = ['sender', 'recipient', 'amount']
+    if not all(k in data for k in required):
+        return jsonify({ 'message': 'Missing values' }), 400
+    
+    index = blockchain.new_transaction(data['sender'], data['recipient'], data['amount'])
+    return jsonify({ 'message': f'Transaction will be added to Block {index}' }), 201
+    
 # Run the program on port 5000
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
