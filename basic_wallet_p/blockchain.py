@@ -124,7 +124,7 @@ def mine():
     # Run the proof of work algorithm to get the next proof
     data = request.get_json()
 
-    required = ['proof', 'id']
+    required = ['username']
 
     # if the values from data are not in required
     if not all(k in data for k in required):
@@ -133,18 +133,19 @@ def mine():
         # return a 400 error
         return jsonify(response), 400
     
-    # get the submitted proof from data
-    submitted_proof = data.get('proof')
-
-    # determine if proof is valid
+    proof = 0
     last_block = blockchain.last_block
     last_block_string = json.dumps(last_block, sort_keys=True)
-    if blockchain.valid_proof(last_block_string, submitted_proof):
+    while not blockchain.valid_proof(last_block_string, proof):
+        proof += 1
+
+    # determine if proof is valid
+    if blockchain.valid_proof(last_block_string, proof):
         # forge the new block
         previous_hash = blockchain.hash(last_block)
-        block = blockchain.new_block(submitted_proof, previous_hash)
+        blockchain.new_transaction('infinite', data['username'], 1)
+        block = blockchain.new_block(proof, previous_hash)
         # build a response dictionary
-
         response = {
             'message': "New Block Forged",
             'index': block['index'],
@@ -190,8 +191,8 @@ def change_username():
             currTransaction = blockchain.chain[b]['transactions'][t]
             if currTransaction.sender == lastUsername:
                 blockchain.chain[b]['transactions'][t].sender = username
-            if currTransaction.receiver == lastUsername:
-                blockchain.chain[b]['transactions'][t].receiver = username
+            if currTransaction.recipient == lastUsername:
+                blockchain.chain[b]['transactions'][t].recipient = username
 
     return jsonify({ 'success': True }), 200
 
@@ -210,7 +211,7 @@ def get_user_balance():
             currTransaction = blockchain.chain[b]['transactions'][t]
             if currTransaction.sender == username:
                 balance -= currTransaction.amount
-            if currTransaction.receiver == username:
+            if currTransaction.recipient == username:
                 balance += currTransaction.amount
 
     return jsonify({ 'username': username, 'balance': balance }), 200
@@ -226,7 +227,7 @@ def get_user_transactions():
     for b in range(0, len(blockchain.chain)):
         for t in range(0, len(blockchain.chain[b]['transactions'])):
             currTransaction = blockchain.chain[b]['transactions'][t]
-            if currTransaction.sender == username or currTransaction.receiver == username:
+            if currTransaction.sender == username or currTransaction.recipient == username:
                 transactions.append(currTransaction)
 
     return jsonify({ 'transactions': transactions }), 200
