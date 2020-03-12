@@ -8,6 +8,7 @@ from flask import Flask, jsonify, request
 
 class Blockchain(object):
     def __init__(self):
+        self.miners = []
         self.chain = []
         self.current_transactions = []
 
@@ -156,6 +157,27 @@ def full_chain():
 def last_block():
     response = { 'last_block': blockchain.last_block }
     return jsonify(response), 200
+
+@app.route('/changeUsername', methods=['POST'])
+def change_username():
+    data = request.get_json()
+    if not data['lastUsername'] or not data['username']:
+        return jsonify({ 'message': 'Missing fields' }), 400
+    if data['username'] in blockchain.miners:
+        return jsonify({ 'message': 'Username already taken' }), 400
+
+    lastUsername = data['lastUsername']
+    username = data['username']
+
+    for b in range(0, len(blockchain.chain)):
+        for t in range(0, len(blockchain.chain[b].transactions)):
+            currTransaction = blockchain.chain[b].transactions[t]
+            if currTransaction.sender == lastUsername:
+                blockchain.chain[b].transactions[t].sender = username
+            if currTransaction.receiver == lastUsername:
+                blockchain.chain[b].transactions[t].receiver = username
+
+    return jsonify({ 'success': True }), 200
 
 
 # Run the program on port 5000
