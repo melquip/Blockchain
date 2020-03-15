@@ -4,10 +4,12 @@ from time import time
 from uuid import uuid4
 
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 
 class Blockchain(object):
     def __init__(self):
+        self.miners = []
         self.chain = []
         self.current_transactions = []
 
@@ -67,6 +69,21 @@ class Blockchain(object):
         # Return the hashed block string in hexadecimal format
         return hashlib.sha256(block_string).hexdigest()
 
+    def new_transaction(self, sender, recipient, amount):
+        """
+        Create a method in the `Blockchain` class called `new_transaction` 
+        that adds a new transaction to the list of transactions:
+        :param sender: <str> Address of the Recipient
+        :param recipient: <str> Address of the Recipient
+        :param amount: <int> Amount
+        :return: <int> The index of the `block` that will hold this transaction
+        """
+        self.current_transactions.append({
+            'sender': sender,
+            'recipient': recipient,
+            'amount': amount
+        })
+        return self.last_block['index'] + 1
 
     @property
     def last_block(self):
@@ -95,7 +112,7 @@ class Blockchain(object):
 
 # Instantiate our Node
 app = Flask(__name__)
-
+CORS(app)
 # Generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
 
@@ -107,7 +124,7 @@ def mine():
     # Run the proof of work algorithm to get the next proof
     data = request.get_json()
 
-    required = ['proof', 'id']
+    required = ['username']
 
     # if the values from data are not in required
     if not all(k in data for k in required):
@@ -116,18 +133,19 @@ def mine():
         # return a 400 error
         return jsonify(response), 400
     
-    # get the submitted proof from data
-    submitted_proof = data.get('proof')
-
-    # determine if proof is valid
+    proof = 0
     last_block = blockchain.last_block
     last_block_string = json.dumps(last_block, sort_keys=True)
-    if blockchain.valid_proof(last_block_string, submitted_proof):
+    while not blockchain.valid_proof(last_block_string, proof):
+        proof += 1
+
+    # determine if proof is valid
+    if blockchain.valid_proof(last_block_string, proof):
         # forge the new block
         previous_hash = blockchain.hash(last_block)
-        block = blockchain.new_block(submitted_proof, previous_hash)
+        blockchain.new_transaction('infinite', data['username'], 1)
+        block = blockchain.new_block(proof, previous_hash)
         # build a response dictionary
-
         response = {
             'message': "New Block Forged",
             'index': block['index'],
@@ -157,7 +175,73 @@ def last_block():
     response = { 'last_block': blockchain.last_block }
     return jsonify(response), 200
 
+@app.route('/user/change', methods=['POST'])
+def change_username():
+    data = request.get_json()
+    if not data['lastUsername'] or not data['username']:
+        return jsonify({ 'message': 'Missing fields' }), 400
+    if data['username'] in blockchain.miners:
+        return jsonify({ 'message': 'Username already taken' }), 400
 
+    lastUsername = data['lastUsername']
+    username = data['username']
+
+    for b in range(0, len(blockchain.chain)):
+        for t in range(0, len(blockchain.chain[b]['transactions'])):
+            currTransaction = blockchain.chain[b]['transactions'][t]
+            if currTransaction['sender'] == lastUsername:
+                blockchain.chain[b]['transactions'][t]['sender'] = username
+            if currTransaction['recipient'] == lastUsername:
+                blockchain.chain[b]['transactions'][t]['recipient'] = username
+
+    return jsonify({ 'success': True }), 200
+
+
+@app.route('/user/balance', methods=['POST'])
+def get_user_balance():
+    data = request.get_json()
+    if not data['username']:
+        return jsonify({ 'message': 'Missing fields' }), 400
+
+    username = data['username']
+    balance = 0
+
+    for b in range(0, len(blockchain.chain)):
+        for t in range(0, len(blockchain.chain[b]['transactions'])):
+            currTransaction = blockchain.chain[b]['transactions'][t]
+            if currTransaction['sender'] == username:
+                balance -= currTransaction['amount']
+            if currTransaction['recipient'] == username:
+                balance += currTransaction['amount']
+
+    return jsonify({ 'username': username, 'balance': balance }), 200
+
+@app.route('/user/transactions', methods=['POST'])
+def get_user_transactions():
+    data = request.get_json()
+    if not data['username']:
+        return jsonify({ 'message': 'Missing fields' }), 400
+
+    username = data['username']
+    transactions = []
+    for b in range(0, len(blockchain.chain)):
+        for t in range(0, len(blockchain.chain[b]['transactions'])):
+            currTransaction = blockchain.chain[b]['transactions'][t]
+            if currTransaction['sender'] == username or currTransaction['recipient'] == username:
+                transactions.append(currTransaction)
+
+    return jsonify({ 'transactions': transactions }), 200
+
+@app.route('/transaction/new', methods=['POST'])
+def new_transaction():
+    data = request.get_json()
+    required = ['sender', 'recipient', 'amount']
+    if not all(k in data for k in required):
+        return jsonify({ 'message': 'Missing values' }), 400
+    
+    index = blockchain.new_transaction(data['sender'], data['recipient'], float(data['amount']))
+    return jsonify({ 'message': f'Transaction will be added to Block {index}' }), 200
+    
 # Run the program on port 5000
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
